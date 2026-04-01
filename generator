@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>WanderWell Welcome Letter Generator</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --green:#16a34a;--green-dark:#14532d;--green-light:#dcfce7;--green-mid:#86efac;--green-bg:#f0fdf4;
+    --navy:#1a1a2e;--gray-50:#f9fafb;--gray-100:#f3f4f6;--gray-200:#e5e7eb;--gray-300:#d1d5db;
+    --gray-400:#9ca3af;--gray-600:#4b5563;--gray-700:#374151;--gray-900:#111827;
+    --red:#dc2626;--radius-sm:6px;--radius-md:8px;--radius-lg:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--gray-50);color:var(--gray-900);font-size:14px;line-height:1.6}
+
+  /* ── Password Gate ── */
+  #gate{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:9999;padding:1.5rem}
+  .gate-card{background:white;border-radius:16px;padding:2.5rem 2rem;width:100%;max-width:380px;text-align:center}
+  .gate-logo{width:52px;height:52px;background:var(--green);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem}
+  .gate-logo svg{width:28px;height:28px;fill:white}
+  .gate-title{font-size:20px;font-weight:700;color:var(--navy);margin-bottom:6px}
+  .gate-sub{font-size:13px;color:var(--gray-600);margin-bottom:1.5rem}
+  .gate-input-wrap{position:relative;margin-bottom:10px}
+  .gate-input{width:100%;padding:11px 44px 11px 14px;font-size:15px;border:1.5px solid var(--gray-200);border-radius:var(--radius-md);background:var(--gray-50);color:var(--gray-900);font-family:inherit;transition:border-color .15s;text-align:center;letter-spacing:.1em}
+  .gate-input:focus{outline:none;border-color:var(--green);background:white}
+  .gate-input.error{border-color:var(--red);animation:shake .3s ease}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  .toggle-pw{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-400);padding:4px}
+  .toggle-pw:hover{color:var(--gray-700)}
+  .toggle-pw svg{width:18px;height:18px;fill:currentColor}
+  .gate-btn{width:100%;padding:12px;font-size:14px;font-weight:700;border-radius:var(--radius-md);border:none;background:var(--green);color:white;cursor:pointer;transition:background .15s;margin-top:4px}
+  .gate-btn:hover{background:var(--green-dark)}
+  .gate-error{font-size:12px;color:var(--red);margin-top:8px;min-height:16px}
+  .gate-hint{font-size:11px;color:var(--gray-400);margin-top:1rem}
+
+  /* ── Main App ── */
+  #app{display:none}
+  .container{max-width:760px;margin:0 auto;padding:2rem 1.25rem 4rem}
+  .header{display:flex;align-items:center;gap:14px;margin-bottom:2.5rem}
+  .logo{width:44px;height:44px;background:var(--green);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .logo svg{width:24px;height:24px;fill:white}
+  .header h1{font-size:22px;font-weight:700;color:var(--navy);line-height:1.2}
+  .header p{font-size:13px;color:var(--gray-600);margin-top:2px}
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--green-dark);background:var(--green-light);border-radius:20px;padding:3px 10px;margin-left:10px;vertical-align:middle}
+  .badge svg{width:10px;height:10px;fill:var(--green)}
+
+  /* ── Cards ── */
+  .card{background:white;border:1px solid var(--gray-200);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem}
+  .card-title{font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.07em;margin-bottom:1rem;display:flex;align-items:center;gap:8px}
+  .card-icon{width:20px;height:20px;border-radius:5px;background:var(--green-light);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .card-icon svg{width:12px;height:12px;fill:var(--green)}
+
+  /* ── Drop zone ── */
+  .drop-zone{border:2px dashed var(--gray-300);border-radius:var(--radius-lg);padding:2.5rem 1.5rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--gray-50)}
+  .drop-zone:hover,.drop-zone.over{border-color:var(--green);background:var(--green-bg)}
+  .drop-icon{width:48px;height:48px;border-radius:12px;background:var(--green-light);display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+  .drop-icon svg{width:26px;height:26px;fill:var(--green)}
+  .drop-title{font-size:16px;font-weight:600;color:var(--gray-900);margin-bottom:6px}
+  .drop-sub{font-size:13px;color:var(--gray-600)}
+  .browse-btn{display:inline-block;margin-top:14px;padding:8px 20px;font-size:13px;font-weight:600;border-radius:var(--radius-md);border:1px solid var(--gray-300);background:white;color:var(--gray-700);cursor:pointer;transition:all .15s}
+  .browse-btn:hover{border-color:var(--green);color:var(--green)}
+  .file-pill{display:none;align-items:center;gap:10px;padding:10px 14px;background:var(--green-bg);border:1px solid var(--green-mid);border-radius:var(--radius-md);margin-top:12px}
+  .file-pill-icon{width:32px;height:32px;border-radius:6px;background:var(--green-light);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .file-pill-icon svg{width:18px;height:18px;fill:var(--green)}
+  .file-name{font-size:13px;font-weight:600;color:var(--green-dark);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .file-meta{font-size:11px;color:var(--green)}
+  .rm-btn{width:24px;height:24px;border-radius:50%;border:1px solid var(--green-mid);background:transparent;color:var(--green);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+  .rm-btn:hover{background:var(--green-light)}
+
+  /* ── Images ── */
+  .img-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+  .img-row{display:grid;grid-template-columns:44px 1fr 1.4fr auto;gap:8px;align-items:center;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:var(--radius-md);padding:8px 10px}
+  .img-thumb{width:36px;height:36px;object-fit:cover;border-radius:5px;border:1px solid var(--gray-200);display:none}
+  .img-thumb.show{display:block}
+  .img-placeholder{width:36px;height:36px;border-radius:5px;border:1px dashed var(--gray-300);background:var(--gray-100);display:flex;align-items:center;justify-content:center}
+  .img-placeholder svg{width:14px;height:14px;fill:var(--gray-400)}
+  .rm-img{width:28px;height:28px;border-radius:var(--radius-sm);border:1px solid var(--gray-200);background:white;color:var(--gray-400);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .rm-img:hover{background:#fef2f2;color:var(--red);border-color:#fecaca}
+  .add-img-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:9px;font-size:13px;font-weight:500;border-radius:var(--radius-md);border:1.5px dashed var(--gray-300);background:transparent;color:var(--gray-600);cursor:pointer;transition:all .15s}
+  .add-img-btn:hover{border-color:var(--green);color:var(--green);background:var(--green-bg)}
+  .plus-circle{width:18px;height:18px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .plus-circle svg{width:10px;height:10px;fill:white}
+  .img-count{font-size:12px;color:var(--gray-400);margin-bottom:8px}
+
+  /* ── Form ── */
+  .field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+  .field:last-child{margin-bottom:0}
+  label{font-size:12px;font-weight:500;color:var(--gray-600)}
+  input[type=text],select,textarea{width:100%;padding:8px 11px;font-size:13px;border:1px solid var(--gray-200);border-radius:var(--radius-sm);background:var(--gray-50);color:var(--gray-900);font-family:inherit;transition:border-color .15s}
+  input[type=text]:focus,select:focus,textarea:focus{outline:none;border-color:var(--green);background:white}
+  textarea{resize:vertical;min-height:68px;line-height:1.5}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+  /* ── Vol cats ── */
+  .vol-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:7px;margin-bottom:14px}
+  .vcat{padding:8px 6px;border-radius:var(--radius-md);border:1px solid var(--gray-200);background:var(--gray-50);font-size:12px;font-weight:500;cursor:pointer;text-align:center;color:var(--gray-600);transition:all .15s}
+  .vcat:hover{border-color:var(--green);color:var(--green)}
+  .vcat.on{background:var(--green-light);color:var(--green-dark);border-color:var(--green-mid)}
+
+  /* ── Tip ── */
+  .tip{font-size:12px;color:var(--gray-600);padding:9px 13px;border-left:3px solid var(--green);background:var(--green-bg);border-radius:0 var(--radius-sm) var(--radius-sm) 0;margin-bottom:14px;line-height:1.6}
+
+  /* ── Gen button ── */
+  .gen-btn{width:100%;padding:14px;font-size:15px;font-weight:700;border-radius:var(--radius-lg);border:none;background:var(--green);color:white;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:10px}
+  .gen-btn:hover{background:var(--green-dark)}
+  .gen-btn:disabled{opacity:.45;cursor:not-allowed}
+  .gen-btn svg{width:18px;height:18px;fill:white}
+
+  /* ── Progress ── */
+  .progress-wrap{margin:14px 0 4px;display:none}
+  .progress-bar{height:4px;background:var(--gray-200);border-radius:2px;overflow:hidden}
+  .progress-fill{height:100%;background:var(--green);border-radius:2px;width:0%;transition:width .4s ease}
+  .progress-label{font-size:12px;color:var(--gray-600);margin-top:6px;text-align:center}
+
+  /* ── Output ── */
+  .output-section{display:none;margin-top:1.5rem}
+  .output-tabs{display:flex;border-bottom:1px solid var(--gray-200)}
+  .output-tab{padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;color:var(--gray-400);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
+  .output-tab.active{color:var(--green);border-bottom-color:var(--green)}
+  .output-panel{display:none}
+  .output-panel.active{display:block}
+  .letter-box{background:white;border:1px solid var(--gray-200);border-top:none;border-radius:0 0 var(--radius-lg) var(--radius-lg)}
+  .letter-toolbar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--gray-100);background:var(--gray-50)}
+  .letter-toolbar span{font-size:12px;color:var(--gray-400);flex:1}
+  .toolbar-btn{font-size:12px;padding:5px 14px;border-radius:var(--radius-sm);border:1px solid var(--gray-200);background:white;color:var(--gray-700);cursor:pointer;font-weight:500}
+  .toolbar-btn:hover{border-color:var(--green);color:var(--green)}
+  .letter-content{padding:1.5rem;font-size:13px;line-height:1.9;white-space:pre-wrap;max-height:640px;overflow-y:auto;color:var(--gray-900)}
+  .map-box{background:white;border:1px solid var(--gray-200);border-top:none;border-radius:0 0 var(--radius-lg) var(--radius-lg);overflow:hidden}
+  .map-layout{display:grid;grid-template-columns:240px 1fr;height:520px}
+  .map-sidebar{border-right:1px solid var(--gray-200);overflow-y:auto}
+  .map-sidebar-header{padding:12px 14px;border-bottom:1px solid var(--gray-100);font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.06em;background:var(--gray-50)}
+  .map-org{padding:10px 14px;border-bottom:1px solid var(--gray-100);cursor:pointer;transition:background .15s}
+  .map-org:hover{background:var(--green-bg)}
+  .map-org.active{background:var(--green-bg);border-left:3px solid var(--green)}
+  .map-org-name{font-size:13px;font-weight:600;color:var(--gray-900)}
+  .map-org-cat{font-size:11px;color:var(--green);margin-top:2px;font-weight:500}
+  #map{height:100%}
+
+  @media(max-width:600px){
+    .g2{grid-template-columns:1fr}
+    .img-row{grid-template-columns:44px 1fr auto}
+    .map-layout{grid-template-columns:1fr;grid-template-rows:180px 1fr}
+    .map-sidebar{border-right:none;border-bottom:1px solid var(--gray-200);height:180px}
+  }
+</style>
+</head>
+<body>
+
+<!-- ── PASSWORD GATE ───────────────────────────────────────────────────── -->
+<div id="gate">
+  <div class="gate-card">
+    <div class="gate-logo">
+      <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+    </div>
+    <div class="gate-title">WanderWell</div>
+    <div class="gate-sub">Welcome Letter Generator — Team Access</div>
+    <div class="gate-input-wrap">
+      <input class="gate-input" type="password" id="gateInput" placeholder="Enter password" onkeydown="if(event.key==='Enter')unlock()"/>
+      <button class="toggle-pw" onclick="togglePw()" title="Show/hide">
+        <svg id="eyeIcon" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+      </button>
+    </div>
+    <button class="gate-btn" onclick="unlock()">Unlock</button>
+    <div class="gate-error" id="gateError"></div>
+    <div class="gate-hint">Contact your WanderWell admin for access.</div>
+  </div>
+</div>
+
+<!-- ── MAIN APP ────────────────────────────────────────────────────────── -->
+<div id="app">
+<div class="container">
+
+  <div class="header">
+    <div class="logo">
+      <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+    </div>
+    <div>
+      <h1>Welcome Letter Generator <span class="badge"><svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>Unlocked</span></h1>
+      <p>Upload the property PDF — AI reads it and writes the full guest letter with volunteer map.</p>
+    </div>
+  </div>
+
+  <!-- PDF -->
+  <div class="card">
+    <div class="card-title">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg></div>
+      Property PDF
+    </div>
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('pdfIn').click()" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+      <div class="drop-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zm-3 8l-3-3 1.41-1.41L10 16.17V11h2v5.17l1.59-1.59L15 16l-3 3-2-2z"/></svg></div>
+      <div class="drop-title">Drop the property info PDF here</div>
+      <p class="drop-sub">Access codes, WiFi, parking, unit details — whatever the host sent you.</p>
+      <div class="browse-btn">Browse file</div>
+    </div>
+    <input type="file" id="pdfIn" accept=".pdf" style="display:none" onchange="loadFile(this.files[0])"/>
+    <div class="file-pill" id="filePill">
+      <div class="file-pill-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/></svg></div>
+      <div style="flex:1;min-width:0"><div class="file-name" id="fName">—</div><div class="file-meta" id="fMeta">—</div></div>
+      <button class="rm-btn" onclick="clearFile()">×</button>
+    </div>
+  </div>
+
+  <!-- Photos -->
+  <div class="card">
+    <div class="card-title">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg></div>
+      Property Photos
+    </div>
+    <p style="font-size:12px;color:var(--gray-600);margin-bottom:10px">Add image URLs with a label — AI places each photo in the right section of the letter.</p>
+    <div class="img-count" id="imgCount">0 photos added</div>
+    <div class="img-list" id="imgList"></div>
+    <button class="add-img-btn" onclick="addImg()">
+      <div class="plus-circle"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div>
+      Add photo
+    </button>
+  </div>
+
+  <!-- Volunteer prefs -->
+  <div class="card">
+    <div class="card-title">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>
+      Volunteer Guide Preferences
+    </div>
+    <div class="tip">AI will only include <strong>recurring, drop-in opportunities</strong> near the property — no events, no background checks, no long-term commitments.</div>
+    <div class="vol-grid">
+      <div class="vcat on" data-cat="Animals &amp; Wildlife">Animals</div>
+      <div class="vcat on" data-cat="Environment &amp; Outdoors">Environment</div>
+      <div class="vcat on" data-cat="Food &amp; Hunger">Food &amp; Hunger</div>
+      <div class="vcat on" data-cat="Community">Community</div>
+      <div class="vcat on" data-cat="Youth &amp; Families">Youth &amp; Families</div>
+      <div class="vcat on" data-cat="Health">Health</div>
+      <div class="vcat on" data-cat="Arts &amp; Culture">Arts &amp; Culture</div>
+      <div class="vcat on" data-cat="Creative &amp; Misc">Creative</div>
+    </div>
+    <div class="g2">
+      <div class="field">
+        <label>Search radius</label>
+        <select id="radius"><option value="15">Within 15 miles</option><option value="25" selected>Within 25 miles</option><option value="40">Within 40 miles</option></select>
+      </div>
+      <div class="field">
+        <label>Specific orgs to include (optional)</label>
+        <input type="text" id="specificOrgs" placeholder="e.g. Hawaii Food Bank, Surfrider Foundation"/>
+      </div>
+    </div>
+  </div>
+
+  <!-- Extra notes -->
+  <div class="card">
+    <div class="card-title">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M11 17h2v-6h-2v6zm1-15C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM11 9h2V7h-2v2z"/></svg></div>
+      Anything the PDF Might Be Missing
+    </div>
+    <div class="field">
+      <label>Extra notes for AI (optional)</label>
+      <textarea id="extraNotes" placeholder="e.g. Unit is upstairs facing Pokai Bay. Host prefers a warm, personal tone. Early check-in available on request."></textarea>
+    </div>
+  </div>
+
+  <!-- Generate -->
+  <button class="gen-btn" id="genBtn" onclick="generate()">
+    <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+    Generate Welcome Letter
+  </button>
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-label" id="progressLabel">Starting...</div>
+  </div>
+
+  <!-- Output -->
+  <div class="output-section" id="outputSection">
+    <div class="output-tabs">
+      <div class="output-tab active" onclick="switchTab('letter')">Welcome Letter</div>
+      <div class="output-tab" onclick="switchTab('map')">Volunteer Map</div>
+    </div>
+    <div class="output-panel active" id="panel-letter">
+      <div class="letter-box">
+        <div class="letter-toolbar">
+          <span>Ready to paste into Gamma</span>
+          <button class="toolbar-btn" onclick="copyLetter()">Copy text</button>
+          <button class="toolbar-btn" onclick="downloadLetter()">Download .txt</button>
+        </div>
+        <div class="letter-content" id="letterContent"></div>
+      </div>
+    </div>
+    <div class="output-panel" id="panel-map">
+      <div class="map-box">
+        <div class="map-layout">
+          <div class="map-sidebar">
+            <div class="map-sidebar-header">Organizations</div>
+            <div id="mapSidebar"></div>
+          </div>
+          <div id="map"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+// ── CONFIG — edit these two values before uploading ──────────────────────────
+const GATE_PASSWORD   = 'wanderwell2024';          // <-- set your password here
+const ANTHROPIC_KEY   = 'sk-ant-REPLACE_WITH_YOUR_KEY'; // <-- paste your API key here
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── Gate logic ───────────────────────────────────────────────────────────────
+function togglePw() {
+  const inp = document.getElementById('gateInput');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function unlock() {
+  const val = document.getElementById('gateInput').value;
+  const err = document.getElementById('gateError');
+  if (val === GATE_PASSWORD) {
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+  } else {
+    err.textContent = 'Incorrect password. Please try again.';
+    const inp = document.getElementById('gateInput');
+    inp.classList.add('error');
+    inp.value = '';
+    setTimeout(() => inp.classList.remove('error'), 400);
+  }
+}
+
+document.getElementById('gateInput').addEventListener('keydown', e => { if (e.key === 'Enter') unlock(); });
+
+// ── State ────────────────────────────────────────────────────────────────────
+let pdfB64 = null;
+let imgs = [];
+let leafletMap = null;
+let mapMarkers = [];
+
+// ── Drag & Drop ──────────────────────────────────────────────────────────────
+function onDragOver(e) { e.preventDefault(); document.getElementById('dropZone').classList.add('over'); }
+function onDragLeave(e) { document.getElementById('dropZone').classList.remove('over'); }
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.remove('over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type === 'application/pdf') loadFile(f);
+  else alert('Please drop a PDF file.');
+}
+
+function loadFile(f) {
+  if (!f) return;
+  const size = f.size < 1048576 ? Math.round(f.size/1024)+' KB' : (f.size/1048576).toFixed(1)+' MB';
+  document.getElementById('fName').textContent = f.name;
+  document.getElementById('fMeta').textContent = size;
+  document.getElementById('filePill').style.display = 'flex';
+  document.getElementById('dropZone').style.display = 'none';
+  const r = new FileReader();
+  r.onload = e => { pdfB64 = e.target.result.split(',')[1]; };
+  r.readAsDataURL(f);
+}
+
+function clearFile() {
+  pdfB64 = null;
+  document.getElementById('filePill').style.display = 'none';
+  document.getElementById('dropZone').style.display = 'block';
+  document.getElementById('pdfIn').value = '';
+}
+
+// ── Images ───────────────────────────────────────────────────────────────────
+function addImg() {
+  imgs.push({ id: Date.now(), label: '', url: '' });
+  renderImgs();
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('.img-row input[data-field="label"]');
+    if (inputs.length) inputs[inputs.length-1].focus();
+  }, 50);
+}
+
+function removeImg(id) { imgs = imgs.filter(i => i.id !== id); renderImgs(); }
+
+function updateImg(id, field, val) {
+  const img = imgs.find(i => i.id === id);
+  if (!img) return;
+  img[field] = val;
+  if (field === 'url') {
+    const thumb = document.getElementById('thumb-'+id);
+    const ph = document.getElementById('ph-'+id);
+    if (val.startsWith('http')) {
+      thumb.src = val; thumb.style.display = 'block'; thumb.classList.add('show');
+      thumb.onerror = () => { thumb.style.display='none'; if(ph) ph.style.display='flex'; };
+      if(ph) ph.style.display = 'none';
+    } else {
+      thumb.style.display='none'; if(ph) ph.style.display='flex';
+    }
+  }
+}
+
+function renderImgs() {
+  document.getElementById('imgList').innerHTML = imgs.map(img => `
+    <div class="img-row">
+      <div style="position:relative">
+        <div class="img-placeholder" id="ph-${img.id}" style="${img.url.startsWith('http')?'display:none':'display:flex'}">
+          <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+        </div>
+        <img id="thumb-${img.id}" class="img-thumb ${img.url.startsWith('http')?'show':''}" src="${img.url}" onerror="this.style.display='none';document.getElementById('ph-${img.id}').style.display='flex'"/>
+      </div>
+      <input type="text" placeholder="Label (e.g. Front door)" value="${img.label}" data-field="label" oninput="updateImg(${img.id},'label',this.value)" style="font-size:12px"/>
+      <input type="text" placeholder="https://..." value="${img.url}" data-field="url" oninput="updateImg(${img.id},'url',this.value)" style="font-size:12px"/>
+      <button class="rm-img" onclick="removeImg(${img.id})">×</button>
+    </div>`).join('');
+  document.getElementById('imgCount').textContent = imgs.length+' photo'+(imgs.length===1?'':'s')+' added';
+}
+
+// ── Vol cats ─────────────────────────────────────────────────────────────────
+document.querySelectorAll('.vcat').forEach(el => el.addEventListener('click', () => el.classList.toggle('on')));
+
+// ── Progress ─────────────────────────────────────────────────────────────────
+function setProgress(pct, label) {
+  document.getElementById('progressWrap').style.display = 'block';
+  document.getElementById('progressFill').style.width = pct+'%';
+  document.getElementById('progressLabel').textContent = label;
+}
+
+// ── Nominatim geocoding ───────────────────────────────────────────────────────
+async function geocode(address) {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
+      { headers: { 'User-Agent': 'WanderWell/1.0' } });
+    const data = await res.json();
+    if (data && data[0]) return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+  } catch(e) {}
+  return null;
+}
+
+// ── Parse orgs from letter ────────────────────────────────────────────────────
+function parseOrgs(text) {
+  const orgs = [];
+  let cur = null;
+  for (const raw of text.split('\n')) {
+    const line = raw.trim();
+    if (line.match(/^###\s+.{3,}/) && !line.match(/volunteer guide|service opportunities|wanderwell|how purpose|final note|check.?in|check.?out|parking|amenities|wifi|welcome|thank|unit|elevator/i)) {
+      if (cur && cur.name) orgs.push(cur);
+      cur = { name: line.replace(/^#+\s+/,'').replace(/\*+/g,'').trim(), category:'', location:'', website:'' };
+    }
+    if (cur) {
+      if (line.match(/^category[:\s]/i))  cur.category = line.replace(/^category[:\s]*/i,'').trim();
+      if (line.match(/^location[:\s]/i))  cur.location = line.replace(/^location[:\s]*/i,'').trim();
+      if (line.match(/^website[:\s]/i))   cur.website  = line.replace(/^website[:\s]*/i,'').replace(/[\[\]()]/g,'').trim();
+    }
+  }
+  if (cur && cur.name) orgs.push(cur);
+  return orgs.filter(o => o.name && o.name.length > 2 && o.name.length < 80);
+}
+
+// ── Build map ─────────────────────────────────────────────────────────────────
+async function buildMap(orgs, propertyAddr) {
+  setProgress(85, 'Geocoding volunteer locations for map...');
+  if (!leafletMap) {
+    leafletMap = L.map('map').setView([20.9, -157.0], 10);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      { attribution:'© OpenStreetMap contributors', maxZoom:19 }).addTo(leafletMap);
+  } else {
+    mapMarkers.forEach(m => m.remove());
+    mapMarkers = [];
+  }
+
+  const sidebar = document.getElementById('mapSidebar');
+  sidebar.innerHTML = '';
+
+  const greenIcon = L.divIcon({ className:'', iconSize:[14,14], iconAnchor:[7,7],
+    html:`<div style="width:14px;height:14px;background:#16a34a;border:2px solid white;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.3)"></div>` });
+  const homeIcon = L.divIcon({ className:'', iconSize:[20,20], iconAnchor:[10,10],
+    html:`<div style="width:20px;height:20px;background:#1a1a2e;border:2px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center"><svg width="11" height="11" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div>` });
+
+  // Property pin
+  if (propertyAddr) {
+    const coords = await geocode(propertyAddr);
+    if (coords) {
+      const m = L.marker([coords.lat, coords.lon], { icon: homeIcon })
+        .addTo(leafletMap).bindPopup('<strong>Your property</strong><br>'+propertyAddr);
+      mapMarkers.push(m);
+      leafletMap.setView([coords.lat, coords.lon], 11);
+    }
+  }
+  sidebar.innerHTML += `<div class="map-org" style="border-left:3px solid #1a1a2e"><div class="map-org-name">Your property</div><div class="map-org-cat" style="color:#1a1a2e">Your stay</div></div>`;
+
+  // Org pins
+  for (const org of orgs) {
+    const addr = org.location || (org.name + (propertyAddr ? ', '+propertyAddr : ''));
+    await new Promise(r => setTimeout(r, 350));
+    const coords = await geocode(addr);
+    if (!coords) continue;
+    org.lat = coords.lat; org.lon = coords.lon;
+    const marker = L.marker([coords.lat, coords.lon], { icon: greenIcon }).addTo(leafletMap)
+      .bindPopup(`<strong>${org.name}</strong>${org.category?'<br><em>'+org.category+'</em>':''}${org.location?'<br>'+org.location:''}${org.website?'<br><a href="'+org.website+'" target="_blank">Visit website →</a>':''}`);
+    mapMarkers.push(marker);
+    const item = document.createElement('div');
+    item.className = 'map-org';
+    item.innerHTML = `<div class="map-org-name">${org.name}</div><div class="map-org-cat">${org.category||''}</div>`;
+    item.onclick = () => {
+      document.querySelectorAll('.map-org').forEach(el => el.classList.remove('active'));
+      item.classList.add('active');
+      leafletMap.setView([coords.lat, coords.lon], 14);
+      marker.openPopup();
+    };
+    sidebar.appendChild(item);
+  }
+
+  if (mapMarkers.length > 1) leafletMap.fitBounds(L.featureGroup(mapMarkers).getBounds().pad(0.15));
+  setTimeout(() => leafletMap.invalidateSize(), 150);
+}
+
+// ── Tab switch ────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.output-tab').forEach((t,i) => t.classList.toggle('active', (i===0&&tab==='letter')||(i===1&&tab==='map')));
+  document.querySelectorAll('.output-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  if (tab==='map' && leafletMap) setTimeout(() => leafletMap.invalidateSize(), 100);
+}
+
+// ── Copy / Download ───────────────────────────────────────────────────────────
+function copyLetter() {
+  navigator.clipboard.writeText(document.getElementById('letterContent').textContent).then(() => {
+    const b = document.querySelector('.toolbar-btn');
+    b.textContent = 'Copied!';
+    setTimeout(() => b.textContent = 'Copy text', 2000);
+  });
+}
+function downloadLetter() {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([document.getElementById('letterContent').textContent], {type:'text/plain'}));
+  a.download = 'wanderwell-welcome-letter.txt';
+  a.click();
+}
+
+// ── Generate ──────────────────────────────────────────────────────────────────
+async function generate() {
+  if (!pdfB64) { alert('Please upload a property PDF first.'); return; }
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true;
+  document.getElementById('outputSection').style.display = 'none';
+  setProgress(10, 'Reading property PDF...');
+
+  const cats = [...document.querySelectorAll('.vcat.on')].map(e=>e.dataset.cat).join(', ');
+  const extra = document.getElementById('extraNotes').value.trim();
+  const orgs  = document.getElementById('specificOrgs').value.trim();
+  const radius = document.getElementById('radius').value;
+  const photoList = imgs.filter(i=>i.url||i.label).map(i=>`- ${i.label||'Photo'}: ${i.url||'no url'}`).join('\n') || 'No photos provided';
+
+  const prompt = `You are WanderWell's welcome letter AI. A host uploaded their property info PDF. Read it carefully, extract all details, then write a complete guest welcome letter.
+
+STEP 1 — Extract from the PDF:
+Property name, full address, unit details, host name and contact, check-in and check-out times, early/late fees, access method and code, step-by-step entry directions, parking instructions and gate/lockbox details, key fob info, WiFi network and password, TV/streaming notes, kitchen guidelines, washer/dryer notes, house rules, quiet hours, trash/recycling info, checkout checklist, and any other guest info.
+
+PHOTOS — provided by host. Place each as [IMAGE: label] in the most relevant section:
+${photoList}
+
+ADDITIONAL NOTES (not in PDF):
+${extra || 'None'}
+
+STEP 2 — Research volunteer opportunities.
+Search the web for 6-10 REAL organizations within ${radius} miles of the property address.
+
+STRICT RULES — only include if ALL are true:
+1. Drop-in or walk-in volunteering — no appointment needed or easy same-week signup
+2. Recurring, ongoing program — NOT a one-time event, seasonal fundraiser, or annual drive
+3. No background check, LiveScan, or fingerprinting required
+4. No long-term commitment (no minimum weeks or months)
+5. A traveler staying 2-7 days could show up and volunteer any day
+6. Guide is read year-round — opportunities must always be available
+
+Categories: ${cats}
+Specific orgs if possible: ${orgs || 'none'}
+
+Use this EXACT format for every org (required for map):
+### [Org Name]
+Category: [category]
+Who they are: [1-2 sentences]
+What you'll do: [specific tasks, 1-2 sentences]
+Location: [full street address or neighborhood, city, state]
+Website: [full URL]
+Note: [key volunteer info e.g. drop-in hours]
+
+STEP 3 — Write the full welcome letter with these sections:
+
+1. WELCOME TO [PROPERTY NAME]
+2. CHECK-IN & CHECK-OUT — times, fees, address [IMAGE: exterior]
+3. ACCESS & ENTRY — method, code, numbered steps, key fob [IMAGE: front door] [IMAGE: keypad]
+4. PARKING INSTRUCTIONS — details, gate, lockbox [IMAGE: parking]
+5. ELEVATOR & UNIT DIRECTIONS — steps if applicable [IMAGE: elevator]
+6. UNIT AMENITIES & GUIDELINES — WiFi | TVs & Streaming | Kitchen | Washer & Dryer
+7. WANDER WELL x [CITY] VOLUNTEER GUIDE
+   - Purpose-Driven Travel Begins Here (intro)
+   - How WanderWell Works — Connect, Ground, Impact, Inspire
+   - Local Service Opportunities — all orgs in exact format above, grouped by category
+   - A Final Note
+8. CHECK-OUT INSTRUCTIONS — time, checklist with checkmarks, trash location [IMAGE: interior]
+9. THANK YOU & SHARE YOUR STORY — closing, #WanderWell, journal note, host sign-off
+
+Flag anything missing with [CHECK: item]. Tone: warm, purposeful, welcoming.`;
+
+  try {
+    setProgress(35, 'Searching for volunteer organizations near the property...');
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 8000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{
+          role: 'user',
+          content: [
+            { type:'document', source:{ type:'base64', media_type:'application/pdf', data:pdfB64 } },
+            { type:'text', text:prompt }
+          ]
+        }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(()=>({}));
+      throw new Error(err.error?.message || 'API error '+res.status);
+    }
+
+    setProgress(72, 'Writing your welcome letter...');
+    const data = await res.json();
+    const text = data.content.filter(b=>b.type==='text').map(b=>b.text).join('\n');
+    if (!text || text.length < 100) throw new Error('Empty response from API. Check your key and try again.');
+
+    document.getElementById('letterContent').textContent = text;
+    document.getElementById('outputSection').style.display = 'block';
+
+    // Map
+    setProgress(80, 'Building volunteer map...');
+    const parsedOrgs = parseOrgs(text);
+    const addrMatch = text.match(/\d+\s[\w\s,\.]+(?:Ave|St|Rd|Dr|Blvd|Hwy|Way|Ln|Ct|Pl)[,\s]+[\w\s]+,\s*[A-Z]{2}\s*\d{5}/i);
+    await buildMap(parsedOrgs, addrMatch ? addrMatch[0] : '');
+
+    setProgress(100, 'Done!');
+    setTimeout(() => document.getElementById('progressWrap').style.display='none', 1500);
+
+  } catch(e) {
+    document.getElementById('progressWrap').style.display = 'none';
+    alert('Error: ' + e.message);
+    console.error(e);
+  }
+  btn.disabled = false;
+}
+</script>
+</body>
+</html>
