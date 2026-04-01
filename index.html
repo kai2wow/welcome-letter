@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-  :root {
+  :root{
     --green:#16a34a;--green-dark:#14532d;--green-light:#dcfce7;--green-mid:#86efac;--green-bg:#f0fdf4;
     --navy:#1a1a2e;--gray-50:#f9fafb;--gray-100:#f3f4f6;--gray-200:#e5e7eb;--gray-300:#d1d5db;
     --gray-400:#9ca3af;--gray-600:#4b5563;--gray-700:#374151;--gray-900:#111827;
@@ -16,27 +16,33 @@
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--gray-50);color:var(--gray-900);font-size:14px;line-height:1.6}
 
-  /* ── Password Gate ── */
+  /* Gate */
   #gate{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:9999;padding:1.5rem}
-  .gate-card{background:white;border-radius:16px;padding:2.5rem 2rem;width:100%;max-width:380px;text-align:center}
+  .gate-card{background:white;border-radius:16px;padding:2.5rem 2rem;width:100%;max-width:400px;text-align:center}
   .gate-logo{width:52px;height:52px;background:var(--green);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem}
   .gate-logo svg{width:28px;height:28px;fill:white}
   .gate-title{font-size:20px;font-weight:700;color:var(--navy);margin-bottom:6px}
   .gate-sub{font-size:13px;color:var(--gray-600);margin-bottom:1.5rem}
-  .gate-input-wrap{position:relative;margin-bottom:10px}
-  .gate-input{width:100%;padding:11px 44px 11px 14px;font-size:15px;border:1.5px solid var(--gray-200);border-radius:var(--radius-md);background:var(--gray-50);color:var(--gray-900);font-family:inherit;transition:border-color .15s;text-align:center;letter-spacing:.1em}
+  .field-label{font-size:12px;font-weight:600;color:var(--gray-700);text-align:left;display:block;margin-bottom:5px}
+  .gate-input-wrap{position:relative;margin-bottom:12px}
+  .gate-input{width:100%;padding:11px 44px 11px 14px;font-size:14px;border:1.5px solid var(--gray-200);border-radius:var(--radius-md);background:var(--gray-50);color:var(--gray-900);font-family:inherit;transition:border-color .15s}
   .gate-input:focus{outline:none;border-color:var(--green);background:white}
   .gate-input.error{border-color:var(--red);animation:shake .3s ease}
+  .gate-input.mono{font-family:monospace;font-size:12px;letter-spacing:.03em}
   @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
-  .toggle-pw{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-400);padding:4px}
-  .toggle-pw:hover{color:var(--gray-700)}
-  .toggle-pw svg{width:18px;height:18px;fill:currentColor}
+  .eye-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-400);padding:4px}
+  .eye-btn:hover{color:var(--gray-700)}
+  .eye-btn svg{width:18px;height:18px;fill:currentColor}
+  .divider{display:flex;align-items:center;gap:10px;margin:4px 0 12px}
+  .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--gray-200)}
+  .divider span{font-size:11px;color:var(--gray-400)}
   .gate-btn{width:100%;padding:12px;font-size:14px;font-weight:700;border-radius:var(--radius-md);border:none;background:var(--green);color:white;cursor:pointer;transition:background .15s;margin-top:4px}
   .gate-btn:hover{background:var(--green-dark)}
-  .gate-error{font-size:12px;color:var(--red);margin-top:8px;min-height:16px}
-  .gate-hint{font-size:11px;color:var(--gray-400);margin-top:1rem}
+  .gate-error{font-size:12px;color:var(--red);margin-top:10px;min-height:16px;text-align:left}
+  .gate-hint{font-size:11px;color:var(--gray-400);margin-top:14px;line-height:1.6}
+  .key-note{font-size:11px;color:var(--gray-400);text-align:left;margin-top:4px;margin-bottom:0}
 
-  /* ── Main App ── */
+  /* App */
   #app{display:none}
   .container{max-width:760px;margin:0 auto;padding:2rem 1.25rem 4rem}
   .header{display:flex;align-items:center;gap:14px;margin-bottom:2.5rem}
@@ -44,16 +50,16 @@
   .logo svg{width:24px;height:24px;fill:white}
   .header h1{font-size:22px;font-weight:700;color:var(--navy);line-height:1.2}
   .header p{font-size:13px;color:var(--gray-600);margin-top:2px}
-  .badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--green-dark);background:var(--green-light);border-radius:20px;padding:3px 10px;margin-left:10px;vertical-align:middle}
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--green-dark);background:var(--green-light);border-radius:20px;padding:3px 10px;margin-left:8px;vertical-align:middle}
   .badge svg{width:10px;height:10px;fill:var(--green)}
 
-  /* ── Cards ── */
+  /* Cards */
   .card{background:white;border:1px solid var(--gray-200);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem}
   .card-title{font-size:11px;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.07em;margin-bottom:1rem;display:flex;align-items:center;gap:8px}
   .card-icon{width:20px;height:20px;border-radius:5px;background:var(--green-light);display:flex;align-items:center;justify-content:center;flex-shrink:0}
   .card-icon svg{width:12px;height:12px;fill:var(--green)}
 
-  /* ── Drop zone ── */
+  /* Drop zone */
   .drop-zone{border:2px dashed var(--gray-300);border-radius:var(--radius-lg);padding:2.5rem 1.5rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--gray-50)}
   .drop-zone:hover,.drop-zone.over{border-color:var(--green);background:var(--green-bg)}
   .drop-icon{width:48px;height:48px;border-radius:12px;background:var(--green-light);display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
@@ -70,7 +76,7 @@
   .rm-btn{width:24px;height:24px;border-radius:50%;border:1px solid var(--green-mid);background:transparent;color:var(--green);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
   .rm-btn:hover{background:var(--green-light)}
 
-  /* ── Images ── */
+  /* Images */
   .img-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
   .img-row{display:grid;grid-template-columns:44px 1fr 1.4fr auto;gap:8px;align-items:center;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:var(--radius-md);padding:8px 10px}
   .img-thumb{width:36px;height:36px;object-fit:cover;border-radius:5px;border:1px solid var(--gray-200);display:none}
@@ -85,7 +91,7 @@
   .plus-circle svg{width:10px;height:10px;fill:white}
   .img-count{font-size:12px;color:var(--gray-400);margin-bottom:8px}
 
-  /* ── Form ── */
+  /* Form */
   .field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
   .field:last-child{margin-bottom:0}
   label{font-size:12px;font-weight:500;color:var(--gray-600)}
@@ -94,28 +100,28 @@
   textarea{resize:vertical;min-height:68px;line-height:1.5}
   .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 
-  /* ── Vol cats ── */
+  /* Vol cats */
   .vol-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:7px;margin-bottom:14px}
   .vcat{padding:8px 6px;border-radius:var(--radius-md);border:1px solid var(--gray-200);background:var(--gray-50);font-size:12px;font-weight:500;cursor:pointer;text-align:center;color:var(--gray-600);transition:all .15s}
   .vcat:hover{border-color:var(--green);color:var(--green)}
   .vcat.on{background:var(--green-light);color:var(--green-dark);border-color:var(--green-mid)}
 
-  /* ── Tip ── */
+  /* Tip */
   .tip{font-size:12px;color:var(--gray-600);padding:9px 13px;border-left:3px solid var(--green);background:var(--green-bg);border-radius:0 var(--radius-sm) var(--radius-sm) 0;margin-bottom:14px;line-height:1.6}
 
-  /* ── Gen button ── */
+  /* Gen button */
   .gen-btn{width:100%;padding:14px;font-size:15px;font-weight:700;border-radius:var(--radius-lg);border:none;background:var(--green);color:white;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:10px}
   .gen-btn:hover{background:var(--green-dark)}
   .gen-btn:disabled{opacity:.45;cursor:not-allowed}
   .gen-btn svg{width:18px;height:18px;fill:white}
 
-  /* ── Progress ── */
+  /* Progress */
   .progress-wrap{margin:14px 0 4px;display:none}
   .progress-bar{height:4px;background:var(--gray-200);border-radius:2px;overflow:hidden}
   .progress-fill{height:100%;background:var(--green);border-radius:2px;width:0%;transition:width .4s ease}
   .progress-label{font-size:12px;color:var(--gray-600);margin-top:6px;text-align:center}
 
-  /* ── Output ── */
+  /* Output */
   .output-section{display:none;margin-top:1.5rem}
   .output-tabs{display:flex;border-bottom:1px solid var(--gray-200)}
   .output-tab{padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;color:var(--gray-400);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
@@ -149,27 +155,41 @@
 </head>
 <body>
 
-<!-- ── PASSWORD GATE ───────────────────────────────────────────────────── -->
+<!-- PASSWORD GATE — no API key stored here, entered at login -->
 <div id="gate">
   <div class="gate-card">
     <div class="gate-logo">
       <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
     </div>
     <div class="gate-title">WanderWell</div>
-    <div class="gate-sub">Welcome Letter Generator — Team Access</div>
+    <div class="gate-sub">Welcome Letter Generator</div>
+
+    <label class="field-label" for="gatePass">Team password</label>
     <div class="gate-input-wrap">
-      <input class="gate-input" type="password" id="gateInput" placeholder="Enter password" onkeydown="if(event.key==='Enter')unlock()"/>
-      <button class="toggle-pw" onclick="togglePw()" title="Show/hide">
-        <svg id="eyeIcon" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+      <input class="gate-input" type="password" id="gatePass" placeholder="Enter team password" onkeydown="if(event.key==='Enter')document.getElementById('gateKey').focus()"/>
+      <button class="eye-btn" onclick="toggleVis('gatePass')" title="Show/hide">
+        <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
       </button>
     </div>
-    <button class="gate-btn" onclick="unlock()">Unlock</button>
+
+    <div class="divider"><span>and</span></div>
+
+    <label class="field-label" for="gateKey">Anthropic API key</label>
+    <div class="gate-input-wrap">
+      <input class="gate-input mono" type="password" id="gateKey" placeholder="sk-ant-..." onkeydown="if(event.key==='Enter')unlock()"/>
+      <button class="eye-btn" onclick="toggleVis('gateKey')" title="Show/hide">
+        <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+      </button>
+    </div>
+    <p class="key-note">Get your key at console.anthropic.com — stored only in your browser session, never saved to this file.</p>
+
+    <button class="gate-btn" onclick="unlock()">Unlock Generator</button>
     <div class="gate-error" id="gateError"></div>
-    <div class="gate-hint">Contact your WanderWell admin for access.</div>
+    <div class="gate-hint">Contact your WanderWell admin for the team password.</div>
   </div>
 </div>
 
-<!-- ── MAIN APP ────────────────────────────────────────────────────────── -->
+<!-- MAIN APP -->
 <div id="app">
 <div class="container">
 
@@ -178,7 +198,12 @@
       <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
     </div>
     <div>
-      <h1>Welcome Letter Generator <span class="badge"><svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>Unlocked</span></h1>
+      <h1>Welcome Letter Generator
+        <span class="badge">
+          <svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+          Unlocked
+        </span>
+      </h1>
       <p>Upload the property PDF — AI reads it and writes the full guest letter with volunteer map.</p>
     </div>
   </div>
@@ -302,41 +327,54 @@
 </div>
 
 <script>
-// ── CONFIG — edit these two values before uploading ──────────────────────────
-const GATE_PASSWORD   = 'wanderwell2024';          // <-- set your password here
-const ANTHROPIC_KEY   = 'sk-ant-REPLACE_WITH_YOUR_KEY'; // <-- paste your API key here
-// ─────────────────────────────────────────────────────────────────────────────
+// ── CONFIG: set your team password here — API key is entered at login, never stored in this file ──
+const GATE_PASSWORD = 'wanderwell2024'; // <-- change this to your own password
 
-// ── Gate logic ───────────────────────────────────────────────────────────────
-function togglePw() {
-  const inp = document.getElementById('gateInput');
-  inp.type = inp.type === 'password' ? 'text' : 'password';
+// ── Session key (set at login, cleared on tab close) ─────────────────────────
+let SESSION_API_KEY = '';
+
+// ── Gate ─────────────────────────────────────────────────────────────────────
+function toggleVis(id) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
 }
 
 function unlock() {
-  const val = document.getElementById('gateInput').value;
-  const err = document.getElementById('gateError');
-  if (val === GATE_PASSWORD) {
-    document.getElementById('gate').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-  } else {
+  const pass = document.getElementById('gatePass').value;
+  const key  = document.getElementById('gateKey').value.trim();
+  const err  = document.getElementById('gateError');
+
+  if (pass !== GATE_PASSWORD) {
     err.textContent = 'Incorrect password. Please try again.';
-    const inp = document.getElementById('gateInput');
+    const inp = document.getElementById('gatePass');
     inp.classList.add('error');
     inp.value = '';
     setTimeout(() => inp.classList.remove('error'), 400);
+    return;
   }
+  if (!key.startsWith('sk-ant-')) {
+    err.textContent = 'Please enter a valid Anthropic API key (starts with sk-ant-).';
+    const inp = document.getElementById('gateKey');
+    inp.classList.add('error');
+    setTimeout(() => inp.classList.remove('error'), 400);
+    return;
+  }
+
+  SESSION_API_KEY = key;
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
 }
 
-document.getElementById('gateInput').addEventListener('keydown', e => { if (e.key === 'Enter') unlock(); });
+document.getElementById('gatePass').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('gateKey').focus(); });
+document.getElementById('gateKey').addEventListener('keydown', e => { if(e.key==='Enter') unlock(); });
 
-// ── State ────────────────────────────────────────────────────────────────────
+// ── State ─────────────────────────────────────────────────────────────────────
 let pdfB64 = null;
 let imgs = [];
 let leafletMap = null;
 let mapMarkers = [];
 
-// ── Drag & Drop ──────────────────────────────────────────────────────────────
+// ── Drag & Drop ───────────────────────────────────────────────────────────────
 function onDragOver(e) { e.preventDefault(); document.getElementById('dropZone').classList.add('over'); }
 function onDragLeave(e) { document.getElementById('dropZone').classList.remove('over'); }
 function onDrop(e) {
@@ -366,7 +404,7 @@ function clearFile() {
   document.getElementById('pdfIn').value = '';
 }
 
-// ── Images ───────────────────────────────────────────────────────────────────
+// ── Images ────────────────────────────────────────────────────────────────────
 function addImg() {
   imgs.push({ id: Date.now(), label: '', url: '' });
   renderImgs();
@@ -384,13 +422,13 @@ function updateImg(id, field, val) {
   img[field] = val;
   if (field === 'url') {
     const thumb = document.getElementById('thumb-'+id);
-    const ph = document.getElementById('ph-'+id);
+    const ph    = document.getElementById('ph-'+id);
     if (val.startsWith('http')) {
       thumb.src = val; thumb.style.display = 'block'; thumb.classList.add('show');
       thumb.onerror = () => { thumb.style.display='none'; if(ph) ph.style.display='flex'; };
       if(ph) ph.style.display = 'none';
     } else {
-      thumb.style.display='none'; if(ph) ph.style.display='flex';
+      thumb.style.display = 'none'; if(ph) ph.style.display = 'flex';
     }
   }
 }
@@ -411,10 +449,10 @@ function renderImgs() {
   document.getElementById('imgCount').textContent = imgs.length+' photo'+(imgs.length===1?'':'s')+' added';
 }
 
-// ── Vol cats ─────────────────────────────────────────────────────────────────
+// ── Vol cats ──────────────────────────────────────────────────────────────────
 document.querySelectorAll('.vcat').forEach(el => el.addEventListener('click', () => el.classList.toggle('on')));
 
-// ── Progress ─────────────────────────────────────────────────────────────────
+// ── Progress ──────────────────────────────────────────────────────────────────
 function setProgress(pct, label) {
   document.getElementById('progressWrap').style.display = 'block';
   document.getElementById('progressFill').style.width = pct+'%';
@@ -472,7 +510,6 @@ async function buildMap(orgs, propertyAddr) {
   const homeIcon = L.divIcon({ className:'', iconSize:[20,20], iconAnchor:[10,10],
     html:`<div style="width:20px;height:20px;background:#1a1a2e;border:2px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center"><svg width="11" height="11" viewBox="0 0 24 24" fill="white"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div>` });
 
-  // Property pin
   if (propertyAddr) {
     const coords = await geocode(propertyAddr);
     if (coords) {
@@ -484,13 +521,11 @@ async function buildMap(orgs, propertyAddr) {
   }
   sidebar.innerHTML += `<div class="map-org" style="border-left:3px solid #1a1a2e"><div class="map-org-name">Your property</div><div class="map-org-cat" style="color:#1a1a2e">Your stay</div></div>`;
 
-  // Org pins
   for (const org of orgs) {
     const addr = org.location || (org.name + (propertyAddr ? ', '+propertyAddr : ''));
     await new Promise(r => setTimeout(r, 350));
     const coords = await geocode(addr);
     if (!coords) continue;
-    org.lat = coords.lat; org.lon = coords.lon;
     const marker = L.marker([coords.lat, coords.lon], { icon: greenIcon }).addTo(leafletMap)
       .bindPopup(`<strong>${org.name}</strong>${org.category?'<br><em>'+org.category+'</em>':''}${org.location?'<br>'+org.location:''}${org.website?'<br><a href="'+org.website+'" target="_blank">Visit website →</a>':''}`);
     mapMarkers.push(marker);
@@ -541,10 +576,10 @@ async function generate() {
   document.getElementById('outputSection').style.display = 'none';
   setProgress(10, 'Reading property PDF...');
 
-  const cats = [...document.querySelectorAll('.vcat.on')].map(e=>e.dataset.cat).join(', ');
-  const extra = document.getElementById('extraNotes').value.trim();
-  const orgs  = document.getElementById('specificOrgs').value.trim();
-  const radius = document.getElementById('radius').value;
+  const cats      = [...document.querySelectorAll('.vcat.on')].map(e=>e.dataset.cat).join(', ');
+  const extra     = document.getElementById('extraNotes').value.trim();
+  const orgs      = document.getElementById('specificOrgs').value.trim();
+  const radius    = document.getElementById('radius').value;
   const photoList = imgs.filter(i=>i.url||i.label).map(i=>`- ${i.label||'Photo'}: ${i.url||'no url'}`).join('\n') || 'No photos provided';
 
   const prompt = `You are WanderWell's welcome letter AI. A host uploaded their property info PDF. Read it carefully, extract all details, then write a complete guest welcome letter.
@@ -558,8 +593,7 @@ ${photoList}
 ADDITIONAL NOTES (not in PDF):
 ${extra || 'None'}
 
-STEP 2 — Research volunteer opportunities.
-Search the web for 6-10 REAL organizations within ${radius} miles of the property address.
+STEP 2 — Search the web for 6-10 REAL volunteer organizations within ${radius} miles of the property address.
 
 STRICT RULES — only include if ALL are true:
 1. Drop-in or walk-in volunteering — no appointment needed or easy same-week signup
@@ -581,7 +615,7 @@ Location: [full street address or neighborhood, city, state]
 Website: [full URL]
 Note: [key volunteer info e.g. drop-in hours]
 
-STEP 3 — Write the full welcome letter with these sections:
+STEP 3 — Write the full welcome letter:
 
 1. WELCOME TO [PROPERTY NAME]
 2. CHECK-IN & CHECK-OUT — times, fees, address [IMAGE: exterior]
@@ -590,7 +624,7 @@ STEP 3 — Write the full welcome letter with these sections:
 5. ELEVATOR & UNIT DIRECTIONS — steps if applicable [IMAGE: elevator]
 6. UNIT AMENITIES & GUIDELINES — WiFi | TVs & Streaming | Kitchen | Washer & Dryer
 7. WANDER WELL x [CITY] VOLUNTEER GUIDE
-   - Purpose-Driven Travel Begins Here (intro)
+   - Purpose-Driven Travel Begins Here
    - How WanderWell Works — Connect, Ground, Impact, Inspire
    - Local Service Opportunities — all orgs in exact format above, grouped by category
    - A Final Note
@@ -605,7 +639,7 @@ Flag anything missing with [CHECK: item]. Tone: warm, purposeful, welcoming.`;
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_KEY,
+        'x-api-key': SESSION_API_KEY,
         'anthropic-version': '2023-06-01',
         'anthropic-dangerous-direct-browser-access': 'true'
       },
@@ -631,12 +665,11 @@ Flag anything missing with [CHECK: item]. Tone: warm, purposeful, welcoming.`;
     setProgress(72, 'Writing your welcome letter...');
     const data = await res.json();
     const text = data.content.filter(b=>b.type==='text').map(b=>b.text).join('\n');
-    if (!text || text.length < 100) throw new Error('Empty response from API. Check your key and try again.');
+    if (!text || text.length < 100) throw new Error('Empty response. Check your API key and try again.');
 
     document.getElementById('letterContent').textContent = text;
     document.getElementById('outputSection').style.display = 'block';
 
-    // Map
     setProgress(80, 'Building volunteer map...');
     const parsedOrgs = parseOrgs(text);
     const addrMatch = text.match(/\d+\s[\w\s,\.]+(?:Ave|St|Rd|Dr|Blvd|Hwy|Way|Ln|Ct|Pl)[,\s]+[\w\s]+,\s*[A-Z]{2}\s*\d{5}/i);
