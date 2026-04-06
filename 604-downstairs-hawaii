@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WanderWell — 604 Downstairs | Waianae, Hawaiʻi</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;1,9..144,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --brand: #367bbf;
+    --brand-dark: #1e4e7a;
+    --brand-light: #e8f2fb;
+    --sand: #f8f4ee;
+    --bark: #3a2e24;
+    --ocean: #0d4f78;
+    --foam: #ffffff;
+    --mist: #f0f4f8;
+    --leaf: #2d7a52;
+    --sun: #f5a623;
+    --warn: #fff8dc;
+    --warn-border: #f5a623;
+    --radius: 16px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.08);
+    --shadow-lg: 0 12px 48px rgba(0,0,0,0.14);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--sand);
+    color: var(--bark);
+    line-height: 1.65;
+    font-size: 15px;
+  }
+  h1,h2,h3,h4 { font-family: 'Fraunces', serif; font-weight: 500; }
+
+  /* ───────── HERO ───────── */
+  .hero {
+    background: linear-gradient(160deg, var(--ocean) 0%, var(--brand) 60%, #4aa3e0 100%);
+    color: white;
+    padding: 72px 24px 80px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+  .hero-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    border-radius: 999px;
+    padding: 6px 18px;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 20px;
+  }
+  .hero h1 {
+    font-size: clamp(2.4rem, 6vw, 4rem);
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 14px;
+  }
+  .hero h1 em { font-style: italic; color: #b8ddff; }
+  .hero-sub {
+    font-size: 1.05rem;
+    opacity: 0.85;
+    max-width: 540px;
+    margin: 0 auto 32px;
+  }
+  .hero-chips {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .chip {
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: white;
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  /* ───────── LAYOUT ───────── */
+  .container { max-width: 860px; margin: 0 auto; padding: 0 20px; }
+  section { padding: 56px 0; }
+  section + section { border-top: 1px solid rgba(0,0,0,0.07); }
+
+  .section-label {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--brand);
+    margin-bottom: 10px;
+  }
+  .section-title {
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
+    color: var(--bark);
+    margin-bottom: 24px;
+    line-height: 1.2;
+  }
+
+  /* ───────── CARDS ───────── */
+  .card {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .card-inner { padding: 28px 32px; }
+  .card img { width: 100%; height: 220px; object-fit: cover; display: block; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media(max-width: 640px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+
+  /* ───────── CHECK-IN ───────── */
+  .checkin-times {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .time-box {
+    background: var(--brand-light);
+    border-radius: 12px;
+    padding: 20px 24px;
+    text-align: center;
+  }
+  .time-box .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--brand); font-weight: 600; margin-bottom: 6px; }
+  .time-box .time { font-family: 'Fraunces', serif; font-size: 2rem; color: var(--ocean); line-height: 1; }
+  .time-box .note { font-size: 12px; color: #666; margin-top: 4px; }
+
+  .address-box {
+    background: var(--bark);
+    color: white;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+  .address-box .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.6; margin-bottom: 6px; }
+  .address-box p { font-size: 1.1rem; font-weight: 500; }
+  .address-box small { opacity: 0.65; font-size: 13px; }
+
+  /* ───────── PHOTO STRIP ───────── */
+  .photo-strip {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 12px;
+    margin: 24px 0;
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .photo-strip img { width: 100%; height: 200px; object-fit: cover; display: block; border-radius: 10px; }
+  @media(max-width: 640px) {
+    .photo-strip { grid-template-columns: 1fr 1fr; }
+    .photo-strip img:first-child { grid-column: 1/-1; height: 180px; }
+  }
+
+  /* ───────── STEPS ───────── */
+  .steps { list-style: none; display: flex; flex-direction: column; gap: 14px; margin: 20px 0; }
+  .steps li {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    background: var(--mist);
+    border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .step-num {
+    background: var(--brand);
+    color: white;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .steps li p { font-size: 14px; }
+  .steps li strong { color: var(--bark); }
+
+  /* ───────── PHOTO PAIR ───────── */
+  .photo-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 20px 0;
+  }
+  .photo-pair figure { position: relative; }
+  .photo-pair img { width: 100%; height: 200px; object-fit: cover; border-radius: 12px; display: block; }
+  .photo-pair figcaption {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.65), transparent);
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    padding: 16px 14px 10px;
+    border-radius: 0 0 12px 12px;
+  }
+  @media(max-width: 480px) { .photo-pair { grid-template-columns: 1fr; } }
+
+  /* ───────── CODE BOX ───────── */
+  .code-block {
+    background: var(--ocean);
+    color: white;
+    border-radius: 12px;
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 16px 0;
+  }
+  .code-block .code-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.7; }
+  .code-block .code-val { font-family: 'Fraunces', serif; font-size: 2.2rem; letter-spacing: 0.1em; }
+  .code-block .code-icon { font-size: 2rem; opacity: 0.4; }
+
+  /* ───────── AMENITIES ───────── */
+  .amenity-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .amenity-card {
+    background: white;
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow);
+    border-top: 3px solid var(--brand);
+  }
+  .amenity-card .icon { font-size: 28px; margin-bottom: 12px; }
+  .amenity-card h3 { font-size: 1rem; margin-bottom: 6px; color: var(--ocean); }
+  .amenity-card p { font-size: 13.5px; color: #555; }
+  .amenity-card .highlight {
+    display: inline-block;
+    background: var(--brand-light);
+    color: var(--brand-dark);
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-weight: 600;
+    font-size: 13px;
+    margin-top: 8px;
+  }
+  @media(max-width: 480px) { .amenity-grid { grid-template-columns: 1fr; } }
+
+  /* ───────── RULES / NOTES ───────── */
+  .note-box {
+    background: var(--warn);
+    border-left: 4px solid var(--warn-border);
+    border-radius: 0 10px 10px 0;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .note-box strong { color: #a06000; }
+
+  /* ───────── VOLUNTEER SECTION ───────── */
+  .volunteer-hero {
+    background: linear-gradient(135deg, #0d4f78 0%, #1a7a4a 100%);
+    color: white;
+    padding: 48px 32px;
+    border-radius: var(--radius);
+    margin-bottom: 32px;
+    text-align: center;
+  }
+  .volunteer-hero h2 { font-size: 1.9rem; margin-bottom: 10px; }
+  .volunteer-hero p { opacity: 0.85; max-width: 520px; margin: 0 auto; }
+
+  .value-cards { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin: 32px 0; }
+  .value-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px 16px;
+    text-align: center;
+    box-shadow: var(--shadow);
+    border-bottom: 3px solid var(--brand);
+  }
+  .value-card .v-icon { font-size: 26px; margin-bottom: 8px; }
+  .value-card h4 { font-size: 0.85rem; color: var(--brand-dark); margin-bottom: 6px; }
+  .value-card p { font-size: 12px; color: #666; }
+  @media(max-width: 640px) { .value-cards { grid-template-columns: 1fr 1fr; } }
+
+  /* ───────── MAP LAYOUT ───────── */
+  .map-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 0;
+    height: 500px;
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    margin: 32px 0;
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+  .map-sidebar {
+    background: var(--bark);
+    color: white;
+    overflow-y: auto;
+    padding: 16px;
+  }
+  .map-sidebar h3 { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.6; padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+  .sidebar-pin {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 10px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 12.5px;
+  }
+  .sidebar-pin:hover { background: rgba(255,255,255,0.1); }
+  .sidebar-pin .pin-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    margin-top: 4px;
+    flex-shrink: 0;
+  }
+  .sidebar-pin .pin-home { background: #1e3a5f; border: 2px solid white; }
+  .sidebar-pin .pin-org { background: #2d7a52; }
+  .sidebar-pin strong { display: block; margin-bottom: 2px; line-height: 1.3; }
+  .sidebar-pin span { opacity: 0.65; font-size: 11px; }
+  #vol-map { flex: 1; }
+  @media(max-width: 640px) {
+    .map-layout { grid-template-columns: 1fr; height: auto; }
+    .map-sidebar { height: 220px; }
+    #vol-map { height: 320px; }
+  }
+
+  /* ───────── ORG CARDS ───────── */
+  .category-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 36px 0 16px;
+  }
+  .category-label .cat-icon { font-size: 20px; }
+  .category-label h3 { font-size: 1.1rem; color: var(--ocean); }
+
+  .org-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .org-card {
+    background: white;
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    box-shadow: var(--shadow);
+    border-left: 4px solid var(--leaf);
+  }
+  .org-card h4 { font-size: 1rem; color: var(--bark); margin-bottom: 6px; }
+  .org-card .org-meta { font-size: 12px; color: var(--brand); font-weight: 600; margin-bottom: 10px; }
+  .org-card .org-who, .org-card .org-what { font-size: 13px; color: #555; margin-bottom: 6px; }
+  .org-card .org-who strong, .org-card .org-what strong { color: var(--bark); }
+  .org-card .org-link {
+    display: inline-block;
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--brand);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .org-card .org-link:hover { text-decoration: underline; }
+  .org-card .org-note {
+    margin-top: 10px;
+    font-size: 12px;
+    background: var(--brand-light);
+    border-radius: 6px;
+    padding: 6px 10px;
+    color: var(--ocean);
+  }
+  @media(max-width: 640px) { .org-grid { grid-template-columns: 1fr; } }
+
+  /* ───────── CHECKOUT ───────── */
+  .checklist { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 18px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    font-size: 14px;
+  }
+  .check-icon {
+    width: 24px; height: 24px;
+    background: var(--leaf);
+    color: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* ───────── THANK YOU ───────── */
+  .thankyou {
+    background: linear-gradient(135deg, var(--brand) 0%, var(--ocean) 100%);
+    color: white;
+    border-radius: var(--radius);
+    padding: 48px 40px;
+    text-align: center;
+  }
+  .thankyou h2 { font-size: 2rem; margin-bottom: 12px; }
+  .thankyou p { opacity: 0.88; max-width: 480px; margin: 0 auto 20px; }
+  .hashtag { font-family: 'Fraunces', serif; font-size: 1.4rem; font-style: italic; opacity: 0.75; }
+  .host-sig { margin-top: 32px; font-size: 13px; opacity: 0.7; }
+  .host-sig strong { display: block; font-size: 15px; opacity: 1; margin-top: 4px; }
+
+  /* ───────── DIVIDER ───────── */
+  .wave-divider { text-align: center; font-size: 1.5rem; opacity: 0.18; letter-spacing: 0.3em; padding: 8px 0; }
+
+  /* ───────── PRINT ───────── */
+  @media print {
+    .hero { background: var(--ocean) !important; -webkit-print-color-adjust: exact; }
+    .map-layout { height: 360px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════ HERO ═══════════════════════════ -->
+<header class="hero">
+  <div class="hero-badge">🌺 WanderWell Welcome Letter</div>
+  <h1>Aloha, and welcome to<br><em>604 Downstairs</em></h1>
+  <p class="hero-sub">Your home away from home on Oʻahu's beautiful west side — right across from Pokai Bay Beach Park.</p>
+  <div class="hero-chips">
+    <span class="chip">📍 Waiʻanae, Oʻahu</span>
+    <span class="chip">🏡 Downstairs Unit</span>
+    <span class="chip">🌊 Steps from the Beach</span>
+    <span class="chip">🤙 Host: DeBora</span>
+  </div>
+</header>
+
+<main class="container">
+
+<!-- ═══════════════════════════ CHECK-IN / CHECK-OUT ═══════════════════════════ -->
+<section id="checkin">
+  <div class="section-label">Arrival &amp; Departure</div>
+  <h2 class="section-title">Check-In &amp; Check-Out</h2>
+
+  <div class="checkin-times">
+    <div class="time-box">
+      <div class="label">Check-In</div>
+      <div class="time" style="color:var(--leaf)">Flexible</div>
+      <div class="note">Codes sent morning of arrival</div>
+    </div>
+    <div class="time-box">
+      <div class="label">Check-Out</div>
+      <div class="time">10:30<span style="font-size:1.1rem">AM</span></div>
+      <div class="note">Please notify host if earlier</div>
+    </div>
+  </div>
+
+  <div class="address-box">
+    <div class="label">Property Address</div>
+    <p>85-043 Waianae Valley Road, Waiʻanae, HI 96792</p>
+    <small>📌 For GPS — use <strong>"Pokai Bay Beach Park"</strong> to navigate here. Look for the Gray/White two-story unit. Your unit is the downstairs unit to the far left.</small>
+  </div>
+
+  <div class="photo-strip">
+    <img src="https://assets.cdn.filesafe.space/4tZ52HuuLaqYvrrq0Pkn/media/69cd1da4d11b2d53c57c3217.png" alt="The Unit" />
+    <img src="https://assets.cdn.filesafe.space/4tZ52HuuLaqYvrrq0Pkn/media/69cd1da4e9047b61f58b45dc.png" alt="The Unit" />
+    <img src="https://assets.cdn.filesafe.space/4tZ52HuuLaqYvrrq0Pkn/media/69cd1da445ec94311dee8828.png" alt="The Unit" />
+  </div>
+</section>
+
+<!-- ═══════════════════════════ ACCESS & ENTRY ═══════════════════════════ -->
+<section id="access">
+  <div class="section-label">Getting In</div>
+  <h2 class="section-title">Access &amp; Entry</h2>
+
+  <p style="margin-bottom:20px">Your key will be in the lockbox on the black rod iron gate. Here's everything you need to get in smoothly.</p>
+
+  <div class="code-block">
+    <div>
+      <div class="code-label">🔒 Lockbox Code</div>
+      <div class="code-val">5150</div>
+    </div>
+    <div class="code-icon">🗝</div>
+  </div>
+
+  <ul class="steps">
+    <li>
+      <div class="step-num">1</div>
+      <p><strong>Find the lockbox:</strong> Facing the driveway from the outside — look to your <strong>LEFT</strong> side, then down. The lockbox is on the lower area of the black rod iron gate.</p>
+    </li>
+    <li>
+      <div class="step-num">2</div>
+      <p><strong>Retrieve your keys:</strong> The <strong>larger key</strong> is for the front door. The <strong>smaller key</strong> is for the gate. We currently have only one set — please do not lose or misplace them (a replacement fee will apply).</p>
+    </li>
+    <li>
+      <div class="step-num">3</div>
+      <p><strong>Enter the driveway:</strong> Walk inside the driveway. Your front door is straight ahead — the only front door in this driveway area.</p>
+    </li>
+    <li>
+      <div class="step-num">4</div>
+      <p><strong>Open the front door:</strong> Lift the door handle <strong>UP</strong> until you hear a click. Then use the key to unlock. There's a slight step up, then stairs leading up into the unit.</p>
+    </li>
+    <li>
+      <div class="step-num">5</div>
+      <p><strong>Locking from inside:</strong> Same process — lift the handle up and turn the knob. No key needed from the inside.</p>
+    </li>
+  </ul>
+
+  <div class="note-box">
+    <strong>🚪 Tip:</strong> It may take a few tries — hold the handle up and use the key simultaneously. You've got this!
+  </div>
+
+  <div class="photo-pair">
+    <figure>
+      <img src="https://assets.cdn.filesafe.space/4tZ52HuuLaqYvrrq0Pkn/media/69cd1da4aa4c650c9f152e9c.png" alt="The Gate" />
+      <figcaption>The Gate</figcaption>
+    </figure>
+    <figure>
+      <img src="https://assets.cdn.filesafe.space/4tZ52HuuLaqYvrrq0Pkn/media/69cd1da4eaf7fd11f32becaf.png" alt="Lockbox" />
+      <figcaption>Lockbox Location</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ PARKING ═══════════════════════════ -->
+<section id="parking">
+  <div class="section-label">Parking</div>
+  <h2 class="section-title">Parking Instructions</h2>
+
+  <div class="card">
+    <img src="https://assets.cdn.filesafe.space/4tZ52HuuLaqYvrrq0Pkn/media/69cd1fb2eaf7fd6f802c253d.png" alt="Front door and driveway" />
+    <div class="card-inner">
+      <p>You are welcome to <strong>park in the driveway</strong> upon arrival.</p>
+      <br>
+      <div class="note-box">
+        <strong>🚗 Gate Rule:</strong> Please close the gate each time anyone exits — even just to cross the street. No need to fully lock for short trips, just loop the lock through. If leaving for the day, please lock completely.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ UNIT DIRECTIONS ═══════════════════════════ -->
+<section id="unit">
+  <div class="section-label">Finding Your Unit</div>
+  <h2 class="section-title">Unit Directions</h2>
+
+  <p style="margin-bottom:20px">This is a two-story property. <strong>Your unit is the downstairs unit</strong> to the far left when facing the building from the street. Look for the wood bench by the front door.</p>
+
+  <ul class="steps">
+    <li>
+      <div class="step-num">1</div>
+      <p><strong>Enter the driveway:</strong> Once inside the gate, walk straight ahead toward the front of the building.</p>
+    </li>
+    <li>
+      <div class="step-num">2</div>
+      <p><strong>Find the walkway:</strong> There's a walkway by the front lawn — make a quick left, then it's the <strong>1st door on the right-hand side</strong>.</p>
+    </li>
+    <li>
+      <div class="step-num">3</div>
+      <p><strong>Sliding glass door:</strong> The sliding glass door is to the LEFT of the front door — both lead into your unit.</p>
+    </li>
+    <li>
+      <div class="step-num">4</div>
+      <p><strong>Watch your step:</strong> There's a slight step up and stairs that lead up to the living area inside.</p>
+    </li>
+  </ul>
+</section>
+
+<!-- ═══════════════════════════ AMENITIES ═══════════════════════════ -->
+<section id="amenities">
+  <div class="section-label">What's Inside</div>
+  <h2 class="section-title">Unit Amenities &amp; Guidelines</h2>
+
+  <div class="amenity-grid">
+    <div class="amenity-card">
+      <div class="icon">📶</div>
+      <h3>WiFi</h3>
+      <p>Stay connected throughout your stay with high-speed internet.</p>
+      <div class="highlight">Network: SpectrumSetup-E5</div><br>
+      <div class="highlight">Password: modernbike710</div>
+    </div>
+    <div class="amenity-card">
+      <div class="icon">📺</div>
+      <h3>TVs &amp; Streaming</h3>
+      <p>TVs have all your popular channels. Use your own personal logins to stream your favorites.</p>
+      <div class="highlight">⚠️ Log out upon departure</div>
+    </div>
+    <div class="amenity-card">
+      <div class="icon">🍳</div>
+      <h3>Kitchen</h3>
+      <p>Fully equipped kitchen available. Please unplug small appliances when not in use. Wash all dishes before checkout and leave them on the dish drainer.</p>
+      <div class="highlight">🚫 No smoking — hefty fine</div>
+    </div>
+    <div class="amenity-card">
+      <div class="icon">🧺</div>
+      <h3>Washer &amp; Dryer</h3>
+      <p>Going out the front door, make a sharp right toward the side of the house. <strong>Use the side-by-side loaders only.</strong> Medium load, cold water. Detergent &amp; dryer sheets are provided — please return to unit when done.</p>
+    </div>
+  </div>
+
+  <div class="note-box" style="margin-top:24px">
+    <strong>🌡️ AC Note:</strong> Please turn all AC units off when you leave for the day. Hawaii electricity runs very high — your support with this means a lot!
+  </div>
+
+  <div style="margin-top:20px">
+    <h3 style="margin-bottom:14px;font-family:'Fraunces',serif">Trash Schedule 🗑️</h3>
+    <div class="grid-3">
+      <div class="time-box">
+        <div class="label">Black / Dark Gray Bin</div>
+        <div class="time" style="font-size:1.2rem;color:var(--bark)">Every Tuesday</div>
+      </div>
+      <div class="time-box">
+        <div class="label">Blue Bin (Recycling)</div>
+        <div class="time" style="font-size:1.2rem;color:var(--bark)">Every Other Friday</div>
+      </div>
+      <div class="time-box">
+        <div class="label">Green Bin (Garden)</div>
+        <div class="time" style="font-size:1.2rem;color:var(--bark)">Leaves &amp; Yard Only</div>
+      </div>
+    </div>
+    <div class="note-box" style="margin-top:12px">
+      <strong>📌 NOTE:</strong> See the note on the fridge for trash bin day reminders. Please remember to take bins out on the designated day — Mahalo! 🤙🏾
+    </div>
+  </div>
+
+  <div style="margin-top:24px">
+    <h3 style="margin-bottom:14px;font-family:'Fraunces',serif">Bath &amp; Linen</h3>
+    <p>Plenty of bath towels, beach towels, and linens are in the <strong>linen closet in the hallway</strong>. Help yourself!</p>
+  </div>
+
+  <div class="photo-pair" style="margin-top:24px">
+    <figure>
+      <img src="https://assets.cdn.filesafe.space/4tZ52HuuLaqYvrrq0Pkn/media/69cd1da445ec94e51cee8829.png" alt="Trash Bins" />
+      <figcaption>Trash Bins</figcaption>
+    </figure>
+    <figure>
+      <img src="https://assets.cdn.filesafe.space/4tZ52HuuLaqYvrrq0Pkn/media/69cd1da445ec94311dee8828.png" alt="Property" />
+      <figcaption>Your Home Away from Home</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ VOLUNTEER ═══════════════════════════ -->
+<section id="volunteer">
+  <div class="volunteer-hero">
+    <div class="section-label" style="color:rgba(255,255,255,0.7)">WanderWell × Waiʻanae</div>
+    <h2>Purpose-Driven Travel Begins Here</h2>
+    <p>The west side of Oʻahu isn't just a backdrop — it's a living, breathing community. WanderWell invites you to connect with it. Below are organizations where you can show up, give a few hours, and leave having truly experienced this place.</p>
+  </div>
+
+  <div class="value-cards">
+    <div class="value-card">
+      <div class="v-icon">🤝</div>
+      <h4>Connect</h4>
+      <p>Meet locals and root yourself in place beyond the tourist trail.</p>
+    </div>
+    <div class="value-card">
+      <div class="v-icon">🌱</div>
+      <h4>Ground</h4>
+      <p>Slow down. Work with your hands. Feel the ʻāina beneath your feet.</p>
+    </div>
+    <div class="value-card">
+      <div class="v-icon">💥</div>
+      <h4>Impact</h4>
+      <p>Even a few hours can shift something real for families and ecosystems here.</p>
+    </div>
+    <div class="value-card">
+      <div class="v-icon">✨</div>
+      <h4>Inspire</h4>
+      <p>Carry these stories home. Let this trip change how you travel forever.</p>
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <div class="map-layout">
+    <div class="map-sidebar">
+      <h3>Locations</h3>
+      <div class="sidebar-pin" onclick="window.volMap && window.volMap.setView([21.4389,-158.1873],14)">
+        <div class="pin-dot pin-home"></div>
+        <div>
+          <strong>📍 Your Home — 604 Downstairs</strong>
+          <span>85-043 Waianae Valley Rd</span>
+        </div>
+      </div>
+      <div class="sidebar-pin" onclick="window.volMap && window.volMap.setView([21.4315,-158.1961],15)">
+        <div class="pin-dot pin-org"></div>
+        <div><strong>Kahumana Organic Farm</strong><span>Environment / Community</span></div>
+      </div>
+      <div class="sidebar-pin" onclick="window.volMap && window.volMap.setView([21.4389,-158.1873],15)">
+        <div class="pin-dot pin-org"></div>
+        <div><strong>Sustainable Coastlines Hawaiʻi</strong><span>Environment</span></div>
+      </div>
+      <div class="sidebar-pin" onclick="window.volMap && window.volMap.setView([21.3069,-157.8583],13)">
+        <div class="pin-dot pin-org"></div>
+        <div><strong>Hawaiʻi Foodbank</strong><span>Food &amp; Hunger</span></div>
+      </div>
+      <div class="sidebar-pin" onclick="window.volMap && window.volMap.setView([21.4389,-158.1873],14)">
+        <div class="pin-dot pin-org"></div>
+        <div><strong>808 Cleanups</strong><span>Environment</span></div>
+      </div>
+      <div class="sidebar-pin" onclick="window.volMap && window.volMap.setView([21.3952,-158.0674],14)">
+        <div class="pin-dot pin-org"></div>
+        <div><strong>Hoʻomaʻa Foundation</strong><span>Community</span></div>
+      </div>
+      <div class="sidebar-pin" onclick="window.volMap && window.volMap.setView([21.2829,-157.7089],13)">
+        <div class="pin-dot pin-org"></div>
+        <div><strong>Malama Maunalua</strong><span>Environment / Ocean</span></div>
+      </div>
+    </div>
+    <div id="vol-map"></div>
+  </div>
+
+  <!-- ORG CARDS -->
+
+  <div class="category-label">
+    <span class="cat-icon">🌿</span>
+    <h3>Environment &amp; Land</h3>
+  </div>
+  <div class="org-grid">
+
+    <div class="org-card">
+      <h4>Kahumana Organic Farm</h4>
+      <div class="org-meta">📍 86-660 Lualualei Homestead Rd, Waiʻanae (~5 min from your unit)</div>
+      <div class="org-who"><strong>Who they are:</strong> A 31-acre certified organic nonprofit farm operating since 1978, supporting homeless families, people with disabilities, and youth through farm-based community programs.</div>
+      <div class="org-what"><strong>What you'll do:</strong> Help with planting, weeding, composting, or harvesting alongside a warm, multi-ethnic community. Farm tours also available.</div>
+      <div class="org-note">🤙 Drop-in visitors welcome during farm hours. Contact ahead to coordinate — (808) 696-2655.</div>
+      <a class="org-link" href="https://www.kahumana.org" target="_blank">kahumana.org →</a>
+    </div>
+
+    <div class="org-card">
+      <h4>Sustainable Coastlines Hawaiʻi</h4>
+      <div class="org-meta">📍 Oʻahu-wide, including Waiʻanae Coast</div>
+      <div class="org-who"><strong>Who they are:</strong> A leading environmental nonprofit organizing community-driven beach cleanups and coastal education across the islands.</div>
+      <div class="org-what"><strong>What you'll do:</strong> Show up to a scheduled beach cleanup, collect marine debris, and help document what's found to support ocean research.</div>
+      <div class="org-note">🌊 Check their online schedule for upcoming west-side events.</div>
+      <a class="org-link" href="https://www.sustainablecoastlineshawaii.org" target="_blank">sustainablecoastlineshawaii.org →</a>
+    </div>
+
+    <div class="org-card">
+      <h4>808 Cleanups</h4>
+      <div class="org-meta">📍 Statewide — including Waiʻanae beaches</div>
+      <div class="org-who"><strong>Who they are:</strong> A grassroots movement keeping Hawaiʻi clean from mauka (mountain) to makai (ocean) through community-organized cleanups tracked with their free app.</div>
+      <div class="org-what"><strong>What you'll do:</strong> Join or self-organize a cleanup at Pokai Bay Beach Park or nearby shorelines, log your impact, and connect with the local stewardship community.</div>
+      <div class="org-note">📱 Download the 808 Cleanups app to find and join nearby events anytime.</div>
+      <a class="org-link" href="https://808cleanups.org" target="_blank">808cleanups.org →</a>
+    </div>
+
+    <div class="org-card">
+      <h4>Malama Maunalua</h4>
+      <div class="org-meta">📍 Maunalua Bay, Hawaiʻi Kai (~40 min)</div>
+      <div class="org-who"><strong>Who they are:</strong> Dedicated to restoring the natural health of Maunalua Bay through invasive limu (algae) removal, coral restoration, and native planting.</div>
+      <div class="org-what"><strong>What you'll do:</strong> Join an open huki (ocean pull) event removing invasive limu from the bay, or help with native plant care — no water entry required for some roles.</div>
+      <div class="org-note">🐠 Check their calendar at malamamaunalua.org for upcoming open huki dates.</div>
+      <a class="org-link" href="https://malamamaunalua.org" target="_blank">malamamaunalua.org →</a>
+    </div>
+
+  </div>
+
+  <div class="category-label">
+    <span class="cat-icon">🍱</span>
+    <h3>Food &amp; Hunger</h3>
+  </div>
+  <div class="org-grid">
+
+    <div class="org-card" style="border-left-color: var(--sun)">
+      <h4>Hawaiʻi Foodbank — Community Distributions</h4>
+      <div class="org-meta">📍 Oʻahu-wide distribution sites including Waiʻanae</div>
+      <div class="org-who"><strong>Who they are:</strong> The largest food bank in the state, nourishing tens of thousands of families through 250+ partner agencies. Volunteers are the backbone of their operation.</div>
+      <div class="org-what"><strong>What you'll do:</strong> Sort, pack, and distribute food at partner agency distribution events near Waiʻanae.</div>
+      <div class="org-note">📝 Sign up online at hawaiifoodbank.org — group and individual shifts available.</div>
+      <a class="org-link" href="https://hawaiifoodbank.org/get-involved/volunteer/" target="_blank">hawaiifoodbank.org →</a>
+    </div>
+
+    <div class="org-card" style="border-left-color: var(--sun)">
+      <h4>Hoʻomaʻa Foundation</h4>
+      <div class="org-meta">📍 Waiʻanae Coast community-based</div>
+      <div class="org-who"><strong>Who they are:</strong> A community-led foundation focused on the west side of Oʻahu, organizing large-scale volunteer events including beach cleanups and community support efforts.</div>
+      <div class="org-what"><strong>What you'll do:</strong> Assist with community cleanup events, debris removal, and neighbor-support efforts — especially relevant after storm events or ongoing stewardship days.</div>
+      <div class="org-note">💛 Follow them on social media to find the next community volunteer day near you.</div>
+      <a class="org-link" href="https://www.instagram.com/hoomaa_foundation" target="_blank">@hoomaa_foundation →</a>
+    </div>
+
+  </div>
+
+  <div style="background:var(--brand-light);border-radius:var(--radius);padding:28px 32px;margin-top:36px;text-align:center">
+    <h3 style="font-family:'Fraunces',serif;color:var(--ocean);margin-bottom:10px">A Final Note 🌺</h3>
+    <p style="max-width:520px;margin:0 auto;color:#444;font-size:14px">The Waiʻanae community is one of the most giving on the island — and one of the most underserved. Showing up, even for a morning, signals that you see them. That you're here not just to take in the beauty, but to add to it. Mahalo for traveling with intention.</p>
+  </div>
+
+</section>
+
+<!-- ═══════════════════════════ CHECK-OUT ═══════════════════════════ -->
+<section id="checkout">
+  <div class="section-label">Before You Go</div>
+  <h2 class="section-title">Check-Out Instructions</h2>
+  <p style="margin-bottom:8px"><strong>Check-out time: 10:30 AM.</strong> Please leave the unit in great shape for the next guests. Mahalo!</p>
+  <br>
+  <ul class="checklist">
+    <li><div class="check-icon">✓</div><div>Put keys back in the lockbox and <strong>scramble the numbers</strong> after closing.</div></li>
+    <li><div class="check-icon">✓</div><div>Turn OFF all air conditioners.</div></li>
+    <li><div class="check-icon">✓</div><div>Unplug all small kitchen appliances.</div></li>
+    <li><div class="check-icon">✓</div><div>Take out all trash from kitchen, bedrooms, and bathrooms.</div></li>
+    <li><div class="check-icon">✓</div><div>Wash all dishes and leave them on the dish drainer. The cleaner will put them away.</div></li>
+    <li><div class="check-icon">✓</div><div>Remove all linen from beds that were slept in — sheets, pillowcases, and comforter — and place them on the floor at the foot of the bed.</div></li>
+    <li><div class="check-icon">✓</div><div>Place all used towels on the floor in the bathroom.</div></li>
+    <li><div class="check-icon">✓</div><div>Remove any food from the refrigerator that you don't want to leave.</div></li>
+    <li><div class="check-icon">✓</div><div>Log out of any personal streaming accounts on the TVs.</div></li>
+    <li><div class="check-icon">✓</div><div>Report any damage or broken items to DeBora before leaving.</div></li>
+    <li><div class="check-icon">✓</div><div>Close and lock the gate on your way out. Safe travels! 🌺</div></li>
+  </ul>
+</section>
+
+<!-- ═══════════════════════════ THANK YOU ═══════════════════════════ -->
+<section id="thankyou" style="padding-bottom:72px">
+  <div class="thankyou">
+    <h2>Thank You for Being Here 🌊</h2>
+    <p>We hope you leave with saltwater in your hair, stories in your heart, and a deeper connection to this beautiful corner of Oʻahu. Safe travels home — or on to your next adventure.</p>
+    <div class="hashtag">#WanderWell</div>
+    <div class="host-sig">
+      With Aloha,
+      <strong>DeBora Stewart 🤙🏾<br><a href="tel:6192535589" style="color:rgba(255,255,255,0.7);text-decoration:none">(619) 253-5589</a></strong>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ═══════════════════════════ MAP SCRIPT ═══════════════════════════ -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var map = L.map('vol-map', { zoomControl: true, scrollWheelZoom: false })
+    .setView([21.425, -158.195], 12);
+  window.volMap = map;
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap &copy; CARTO',
+    subdomains: 'abcd', maxZoom: 19
+  }).addTo(map);
+
+  function homeIcon() {
+    return L.divIcon({
+      html: '<div style="background:#1e3a5f;border:3px solid white;width:16px;height:16px;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.4)"></div>',
+      iconSize:[16,16], iconAnchor:[8,8], className:''
+    });
+  }
+  function orgIcon(color) {
+    color = color || '#2d7a52';
+    return L.divIcon({
+      html: '<div style="background:'+color+';border:2px solid white;width:13px;height:13px;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>',
+      iconSize:[13,13], iconAnchor:[6,6], className:''
+    });
+  }
+
+  L.marker([21.4389,-158.1873], {icon: homeIcon()})
+    .addTo(map).bindPopup('<strong>🏡 Your Home — 604 Downstairs</strong><br>85-043 Waianae Valley Rd');
+
+  var orgs = [
+    { lat:21.4315, lng:-158.1961, name:'Kahumana Organic Farm', type:'Environment', url:'https://www.kahumana.org', color:'#2d7a52' },
+    { lat:21.432, lng:-158.188, name:'Sustainable Coastlines Hawaiʻi', type:'Environment', url:'https://www.sustainablecoastlineshawaii.org', color:'#0d6b8a' },
+    { lat:21.430, lng:-158.192, name:'808 Cleanups', type:'Environment', url:'https://808cleanups.org', color:'#3a7a2d' },
+    { lat:21.2829, lng:-157.7089, name:'Malama Maunalua', type:'Environment / Ocean', url:'https://malamamaunalua.org', color:'#1a6b7a' },
+    { lat:21.3069, lng:-157.8583, name:'Hawaiʻi Foodbank', type:'Food & Hunger', url:'https://hawaiifoodbank.org', color:'#e07020' },
+    { lat:21.3952, lng:-158.0674, name:"Hoʻomaʻa Foundation", type:'Community', url:'https://www.instagram.com/hoomaa_foundation', color:'#c0392b' },
+  ];
+
+  orgs.forEach(function(o) {
+    L.marker([o.lat, o.lng], { icon: orgIcon(o.color) })
+      .addTo(map)
+      .bindPopup('<strong>'+o.name+'</strong><br><em>'+o.type+'</em><br><a href="'+o.url+'" target="_blank" style="color:#367bbf">Learn more →</a>');
+  });
+});
+</script>
+
+</body>
+</html>
